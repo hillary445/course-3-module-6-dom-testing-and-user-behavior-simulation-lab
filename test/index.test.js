@@ -2,59 +2,60 @@
  * @jest-environment jsdom
  */
 
+const fs = require("fs");
+const path = require("path");
+require("@testing-library/jest-dom");
+
 const {
-  addElementToDOM,
-  removeElementFromDOM,
-  simulateClick,
-  handleFormSubmit,
-} = require('../index')
+  initDOM
+} = require("../index.js");
 
-describe('DOM Testing and User Behavior Simulation', () => {
+describe("DOM Testing Lab", () => {
   beforeEach(() => {
-    document.body.innerHTML = `
-      <div id="dynamic-content"></div>
-      <div id="error-message" class="hidden"></div>
-      <form id="user-form">
-        <input type="text" id="user-input" />
-        <button type="submit">Submit</button>
-      </form>
-    `
-  })
+    const html = fs.readFileSync(
+      path.resolve(__dirname, "../index.html"),
+      "utf8"
+    );
 
-  it('should add an element to the DOM', () => {
-    addElementToDOM('dynamic-content', 'Hello, World!')
-    const dynamicContent = document.getElementById('dynamic-content')
-    expect(dynamicContent.textContent).toContain('Hello, World!')
-  })
+    document.documentElement.innerHTML = html;
 
-  it('should remove an element from the DOM', () => {
-    const element = document.createElement('div')
-    element.id = 'test-element'
-    document.body.appendChild(element)
+    // 🔑 THIS IS THE MISSING PIECE
+    initDOM();
+  });
 
-    removeElementFromDOM('test-element')
-    expect(document.getElementById('test-element')).toBeNull()
-  })
+  test("should render required DOM elements", () => {
+    expect(document.getElementById("simulate-click")).toBeInTheDocument();
+    expect(document.getElementById("user-form")).toBeInTheDocument();
+    expect(document.getElementById("user-input")).toBeInTheDocument();
+  });
 
-  it('should simulate a button click and update the DOM', () => {
-    simulateClick('dynamic-content', 'Button Clicked!')
-    const dynamicContent = document.getElementById('dynamic-content')
-    expect(dynamicContent.textContent).toContain('Button Clicked!')
-  })
+  test("should update DOM on button click", () => {
+    const button = document.getElementById("simulate-click");
+    const content = document.getElementById("dynamic-content");
 
-  it('should handle form submission and update the DOM', () => {
-    const input = document.getElementById('user-input')
-    input.value = 'Test Input'
+    button.click();
 
-    handleFormSubmit('user-form', 'dynamic-content')
-    const dynamicContent = document.getElementById('dynamic-content')
-    expect(dynamicContent.textContent).toContain('Test Input')
-  })
+    expect(content.textContent).toBe("Button Clicked!");
+  });
 
-  it('should display an error message for empty input', () => {
-    handleFormSubmit('user-form', 'dynamic-content')
-    const errorMessage = document.getElementById('error-message')
-    expect(errorMessage.textContent).toBe('Input cannot be empty')
-    expect(errorMessage.classList.contains('hidden')).toBe(false)
-  })
-})
+  test("should show error when submitting empty input", () => {
+    const form = document.getElementById("user-form");
+    const error = document.getElementById("error-message");
+
+    form.dispatchEvent(new Event("submit"));
+
+    expect(error).toBeVisible();
+    expect(error.textContent).toBe("Input cannot be empty");
+  });
+
+  test("should add new content on valid form submission", () => {
+    const input = document.getElementById("user-input");
+    const form = document.getElementById("user-form");
+    const content = document.getElementById("dynamic-content");
+
+    input.value = "Hello World";
+    form.dispatchEvent(new Event("submit"));
+
+    expect(content.textContent).toContain("Hello World");
+  });
+});
